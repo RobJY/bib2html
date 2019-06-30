@@ -6,10 +6,15 @@ class bibtex_entry:
 
     def __init__(self, key, pub_type):
         self.key = key
-        self.pub_type = pub_type
+        if pub_type == 'INPROCEEDING':
+            self.pub_type = 'INPROCEEDING_ABSTRACT'
+        else:
+            self.pub_type = pub_type
         # 'required' fields should be set to '' here
         self.month = ''
         self.booktitle = ''
+        self.pages = ''
+        self.publisher = ''
         
     def update_title(self, title):
         self.title = title
@@ -51,6 +56,8 @@ class bibtex_entry:
         self.pages = pages
 
     def update_pdf_url(self, pdf_url):
+        if self.pub_type == 'INPROCEEDING_ABSTRACT':
+            self.pub_type = 'INPROCEEDING'
         self.pdf_url = pdf_url
 
     def update_pmid(self, pmid):
@@ -93,6 +100,8 @@ class bibtex_entry:
         self.cnote = cnote
 
     def update_ps_url(self, ps_url):
+        if self.pub_type == 'INPROCEEDING_ABSTRACT':
+            self.pub_type = 'INPROCEEDING'
         self.ps_url = ps_url
 
     def update_ps2_url(self, ps2_url):
@@ -226,8 +235,6 @@ class bibtex_entry:
     def display_author_lcv(self):
         # display author in format: First Middle Last
         # so swap if comma in author
-        print(self.author)
-        print()
         author_list = []
         for author in self.author.split(' and '):
             if ',' in author: # assuming only 1 comma
@@ -243,11 +250,18 @@ class bibtex_entry:
     
     def display_entry_lcv(self, obj):
         if obj.pub_type == 'INPROCEEDINGS':
-            print('<B>{0}</B><BR>{1}.<I>{2}</I>, {3} {4}'.format(obj.title,
-                                                                obj.display_author_lcv(),
-                                                                obj.booktitle,
-                                                                obj.month,
-                                                                obj.year))
+            pages = ''
+            if obj.pages != '':
+                pages = 'pages {0}.'.format(obj.pages)
+            publisher = ''
+            if obj.publisher != '':
+                publisher = ' {0},'.format(obj.publisher)
+            print('<P><B>{0}</B><BR>{1}. Published in {2}, {3} {4} {5} {6}.</P>'.format(obj.title,
+                                                                                        obj.display_author_lcv(),
+                                                                                        obj.booktitle,
+                                                                                        pages, publisher,
+                                                                                        obj.month,
+                                                                                        obj.year))
         elif obj.pub_type == 'ARTICLE':
             pass
         

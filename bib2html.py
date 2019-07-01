@@ -7,7 +7,7 @@ class bibtex_entry:
     def __init__(self, key, pub_type):
         self.key = key
         if pub_type == 'INPROCEEDING':
-            self.pub_type = 'INPROCEEDING_ABSTRACT'
+            self.pub_type = 'CONFABSTRACT'
         else:
             self.pub_type = pub_type
         # 'required' fields should be set to '' here
@@ -15,6 +15,8 @@ class bibtex_entry:
         self.booktitle = ''
         self.pages = ''
         self.publisher = ''
+        self.volume = ''
+        self.number = ''
         
     def update_title(self, title):
         self.title = title
@@ -56,7 +58,7 @@ class bibtex_entry:
         self.pages = pages
 
     def update_pdf_url(self, pdf_url):
-        if self.pub_type == 'INPROCEEDING_ABSTRACT':
+        if self.pub_type == 'CONFABSTRACT':
             self.pub_type = 'INPROCEEDING'
         self.pdf_url = pdf_url
 
@@ -100,7 +102,7 @@ class bibtex_entry:
         self.cnote = cnote
 
     def update_ps_url(self, ps_url):
-        if self.pub_type == 'INPROCEEDING_ABSTRACT':
+        if self.pub_type == 'CONFABSTRACT':
             self.pub_type = 'INPROCEEDING'
         self.ps_url = ps_url
 
@@ -249,6 +251,7 @@ class bibtex_entry:
         pass
     
     def display_entry_lcv(self, obj):
+        #### FIX: this can be refactored to remove redundancy!!!
         if obj.pub_type == 'INPROCEEDINGS':
             pages = ''
             if obj.pages != '':
@@ -263,7 +266,22 @@ class bibtex_entry:
                                                                                         obj.month,
                                                                                         obj.year))
         elif obj.pub_type == 'ARTICLE':
-            pass
+            volnum = ''
+            if obj.volume !=  '' and obj.number != '':
+                volnum = '{0} ({1}),'.format(obj.volume, obj.number)
+            elif obj.volume != '':
+                volnum = '{0},'.format(obj.volume)
+            pages = ''
+            if obj.pages != '':
+                pages = 'pages {0}.'.format(obj.pages)            
+            print('<P><B>{0}</B><BR>{1}. Published in {2}, {3}, pp.{4}, {5} {6}.</P>'.format(obj.title,
+                                                                                                   obj.display_author_lcv(),
+                                                                                                   obj.journal,
+                                                                                                   volnum,
+                                                                                                   pages,
+                                                                                                   obj.month,
+                                                                                                   obj.year))
+        #elif obj.pub_type == 
         
 
 class bibtex_repo(bibtex_entry):

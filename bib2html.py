@@ -251,26 +251,8 @@ class bibtex_entry:
     def display_author_vnl(self):
         pass
 
-    def need_divider(curr_obj, prev_obj, sort_method):
-        # do we need a divider based on current and prev
-        #   objects and display method (date, author, etc.)
-        if sort_method == 'date':
-            if curr_obj.year != prev_obj.year:
-                return True
-            else:
-                return False
-        elif sort_method == 'author':
-            if curr_obj.author != prev_obj.author:
-                return True
-            else:
-                return False
-        elif sort_method == 'pub_type':
-            if curr_obj.pub_type != prev_obj.pub_type:
-                return True
-            else:
-                return False
-    
-    def display_entry_lcv(self, obj):
+    def display_entry_lcv(self, curr_idx):
+        obj = self.entry_list[curr_idx]
         entry_str = '<P><B>{0}</B><BR>{1}.'.format(obj.title,
                                                    obj.display_author_lcv())
         if (obj.pub_type == 'INPROCEEDINGS' or
@@ -351,31 +333,52 @@ class bibtex_repo(bibtex_entry):
                     entry += line
         self.entry_list = entry_list
 
-    def display_divider_lcv(self, obj, mode):
+    def display_divider_lcv(self, curr_idx, mode):
         out_str = '<div id=divider><div id=divider-left>'
-        out_str += "<a class=divider name='{0}'>{1}</a></div>".format(obj.year, obj.year)
+        out_str += "<a class=divider name='{0}'>{1}</a></div>".format(self.entry_list[curr_idx].year, self.entry_list[curr_idx].year)
         out_str += '<div id=divider-right>'
         out_str += "<a class=divider href='#top'>top</a>"
         out_str += '</div></div>'
 
         return out_str
     
+    def need_divider(self, curr_idx, sort_method):
+        # do we need a divider based on current and prev
+        #   objects and display method (date, author, etc.)
+        if curr_idx == 0:
+            return True
+        elif sort_method == 'date':
+            if self.entry_list[curr_idx].year != self.entry_list[curr_idx-1].year:
+                return True
+            else:
+                return False
+        elif sort_method == 'author':
+            if self.entry_list[curr_idx].author != self.entry_list[curr_idx-1].author:
+                return True
+            else:
+                return False
+        elif sort_method == 'pub_type':
+            if self.entry_list[curr_idx].pub_type != self.entry_list[curr_idx-1].pub_type:
+                return True
+            else:
+                return False
+
     def write_all_pages(self, mode, out_path):
         sort_method = 'date'
         with open(out_path + 'publications_{0}.html'.format(sort_method), 'w') as f:
             # need to sort then write each page type
             #entry_list_date = sorted(self.entry_list, key=attrgetter('year','author'), reverse = True)
-            entry_list_date = sorted(self.entry_list, key=attrgetter('author'))
-            entry_list_date = sorted(entry_list_date, key=attrgetter('year'),
+            self.entry_list = sorted(self.entry_list, key=attrgetter('author'))
+            self.entry_list = sorted(self.entry_list, key=attrgetter('year'),
                                      reverse = True)
                
-            prev_obj = ''
             curr_page = ''
-            for obj in entry_list_date:
-                if prev_obj == '' or obj.need_divider(prev_obj, 'date'):
-                    curr_page += self.display_divider_lcv(obj, sort_method)
-                curr_page += self.display_entry_lcv(obj)
-                prev_obj = copy.deepcopy(obj)
+            #for obj in entry_list_date:
+            for entry_idx in range(len(self.entry_list)):
+                if self.need_divider(entry_idx, 'date'):
+                    curr_page += self.display_divider_lcv(entry_idx,
+                                                          sort_method)
+                curr_page += self.display_entry_lcv(entry_idx)
             f.write(curr_page)
 
 bibtex_repo('simoncelli.bib').write_all_pages('lcv','output/')

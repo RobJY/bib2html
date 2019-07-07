@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 from operator import attrgetter
+import copy
 
 class bibtex_entry:
 
@@ -249,22 +250,41 @@ class bibtex_entry:
 
     def display_author_vnl(self):
         pass
+
+    def need_divider(curr_obj, prev_obj, sort_method):
+        # do we need a divider based on current and prev
+        #   objects and display method (date, author, etc.)
+        if sort_method == 'date':
+            if curr_obj.year != prev_obj.year:
+                return True
+            else:
+                return False
+        elif sort_method == 'author':
+            if curr_obj.author != prev_obj.author:
+                return True
+            else:
+                return False
+        elif sort_method == 'pub_type':
+            if curr_obj.pub_type != prev_obj.pub_type:
+                return True
+            else:
+                return False
     
     def display_entry_lcv(self, obj):
-        #### FIX: this can be refactored to remove redundancy!!!
-        if obj.pub_type == 'INPROCEEDINGS':
+        entry_str = '<P><B>{0}</B><BR>{1}.'.format(obj.title,
+                                                   obj.display_author_lcv())
+        if (obj.pub_type == 'INPROCEEDINGS' or
+            obj.pub_type == 'CONFABSTRACT' or
+            obj.pub_type == 'INCOLLECTION'):
             pages = ''
             if obj.pages != '':
                 pages = 'pages {0}.'.format(obj.pages)
             publisher = ''
             if obj.publisher != '':
                 publisher = ' {0},'.format(obj.publisher)
-            print('<P><B>{0}</B><BR>{1}. Published in {2}, {3} {4} {5} {6}.</P>'.format(obj.title,
-                                                                                        obj.display_author_lcv(),
-                                                                                        obj.booktitle,
-                                                                                        pages, publisher,
-                                                                                        obj.month,
-                                                                                        obj.year))
+            entry_str += ' Published in {0}, {1} {2}'.format(obj.booktitle,
+                                                             pages,
+                                                             publisher)
         elif obj.pub_type == 'ARTICLE':
             volnum = ''
             if obj.volume !=  '' and obj.number != '':
@@ -274,15 +294,30 @@ class bibtex_entry:
             pages = ''
             if obj.pages != '':
                 pages = 'pages {0}.'.format(obj.pages)            
-            print('<P><B>{0}</B><BR>{1}. Published in {2}, {3}, pp.{4}, {5} {6}.</P>'.format(obj.title,
-                                                                                                   obj.display_author_lcv(),
-                                                                                                   obj.journal,
-                                                                                                   volnum,
-                                                                                                   pages,
-                                                                                                   obj.month,
-                                                                                                   obj.year))
-        #elif obj.pub_type == 
-        
+            entry_str += ' Published in {0}, {1}, pp.{2}'.format(obj.journal,
+                                                                 volnum,
+                                                                 pages)
+        elif obj.pub_type == 'TECHREPORT':
+            entry_str += '{0}, Technical Report {1}'.format(obj.institution,
+                                                            obj.number)
+        elif obj.pub_type == 'PHDTHESIS':
+            entry_str += 'PhD thesis, {0},<br>'.format(obj.school)
+            if obj.address:
+                entry_str += '{0}, '.format(obj.address)
+        elif obj.pub_type == 'MASTERSTHESIS':
+            entry_str += 'MS thesis, {0},<br>'.format(obj.school)
+            if obj.address:
+                entry_str += '{0}, '.format(obj.address)
+        elif (obj.pub_type == 'TALK' or
+              obj.pub_type == 'POSTER'):
+            entry_str += '<i>{0}</i>, '.format(obj.booktitle)
+        else:
+            print('Error: bad pub_type: {0} in display_entry_lcv'.format(obj.pub_type))
+        if obj.month or obj.year:
+            entry_str += ', {0} {1}.'.format(obj.month, obj.year)
+        entry_str += '</P>'
+            
+        return entry_str
 
 class bibtex_repo(bibtex_entry):
 
@@ -316,42 +351,32 @@ class bibtex_repo(bibtex_entry):
                     entry += line
         self.entry_list = entry_list
 
-    def need_divider(curr_obj, prev_obj, sort_method):
-        # do we need a divider based on current and prev
-        #   objects and display method (date, author, etc.)
-        if sort_method == 'date':
-            if curr_obj.year != prev_obj.year:
-                return True
-            else:
-                return False
-        elif sort_method == 'author':
-            if curr_obj.author != prev_obj.author:
-                return True
-            else:
-                return False
-        elif sort_method == 'pub_type':
-            if curr_obj.pub_type != prev_obj.pub_type:
-                return True
-            else:
-                return False
-            
-    def display_divider_lcv(obj):
-        pass
+    def display_divider_lcv(self, obj, mode):
+        out_str = '<div id=divider><div id=divider-left>'
+        out_str += "<a class=divider name='{0}'>{1}</a></div>".format(obj.year, obj.year)
+        out_str += '<div id=divider-right>'
+        out_str += "<a class=divider href='#top'>top</a>"
+        out_str += '</div></div>'
+
+        return out_str
     
     def write_all_pages(self, mode, out_path):
-        print('displaying html')
-        # need to sort then write each page type
-        #entry_list_date = sorted(self.entry_list, key=attrgetter('year','author'), reverse = True)
-        entry_list_date = sorted(self.entry_list, key=attrgetter('author'))
-        entry_list_date = sorted(entry_list_date, key=attrgetter('year'),
-                                 reverse = True)
+        sort_method = 'date'
+        with open(out_path + 'publications_{0}.html'.format(sort_method), 'w') as f:
+            # need to sort then write each page type
+            #entry_list_date = sorted(self.entry_list, key=attrgetter('year','author'), reverse = True)
+            entry_list_date = sorted(self.entry_list, key=attrgetter('author'))
+            entry_list_date = sorted(entry_list_date, key=attrgetter('year'),
+                                     reverse = True)
                
-        prev_obj = ''
-        for obj in entry_list_date:
-            if self.need_divider(obj, prev_obj):
-                self.display_divider_lcv(obj)
-            self.display_entry_lcv(obj)
-            pref_obj = obj
+            prev_obj = ''
+            curr_page = ''
+            for obj in entry_list_date:
+                if prev_obj == '' or obj.need_divider(prev_obj, 'date'):
+                    curr_page += self.display_divider_lcv(obj, sort_method)
+                curr_page += self.display_entry_lcv(obj)
+                prev_obj = copy.deepcopy(obj)
+            f.write(curr_page)
 
-bibtex_repo('simoncelli.bib').write_all_pages('lcv','path')
+bibtex_repo('simoncelli.bib').write_all_pages('lcv','output/')
 

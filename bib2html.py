@@ -2,6 +2,7 @@
 
 from operator import attrgetter
 import copy
+import datetime
 
 class bibtex_entry:
 
@@ -363,17 +364,35 @@ class bibtex_repo(bibtex_entry):
             else:
                 return False
 
+    def write_page_header(self):
+        out_str = "<html><head>\n"
+        out_str += "<TITLE>Online Publications: LCV</TITLE>\n"
+        out_str += "   <META HTTP-EQUIV=\"Content-Type\" CONTENT=\"text/html; charset=iso-8859-1\">\n"
+        out_str += "   <META NAME=\"GENERATOR\" CONTENT=\"Gnu Emacs v19.34\">\n"
+        out_str += "<link rel=\"stylesheet\" href=\"css/lcv.css\" type=\"text/css\">\n"
+        out_str += "<link rel=\"stylesheet\" href=\"css/pubs.css\" type=\"text/css\">\n"
+        out_str += "   </HEAD>\n"
+        out_str += "   <BODY>\n"
+        out_str += "<a name=\"top\"> </a>\n"
+
+        with open('output/headers/lcvheader_dynamic.html', 'r') as f:
+            out_str += f.read()
+
+        out_str += "<div id=\"pagetitle\">Selected Online Publications</div>\n"
+
+        return out_str
+
+        
     def write_all_pages(self, mode, out_path):
         sort_method = 'date'
         with open(out_path + 'publications_{0}.html'.format(sort_method), 'w') as f:
+            curr_page = self.write_page_header()
+            
             # need to sort then write each page type
-            #entry_list_date = sorted(self.entry_list, key=attrgetter('year','author'), reverse = True)
             self.entry_list = sorted(self.entry_list, key=attrgetter('author'))
             self.entry_list = sorted(self.entry_list, key=attrgetter('year'),
                                      reverse = True)
                
-            curr_page = ''
-            #for obj in entry_list_date:
             for entry_idx in range(len(self.entry_list)):
                 if self.need_divider(entry_idx, 'date'):
                     curr_page += self.display_divider_lcv(entry_idx,
